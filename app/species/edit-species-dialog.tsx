@@ -21,43 +21,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState, type BaseSyntheticEvent } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
-
-// We use zod (z) to define a schema for the "Add species" form.
-// zod handles validation of the input values with methods like .string(), .nullable(). It also processes the form inputs with .transform() before the inputs are sent to the database.
-
-// Define kingdom enum for use in Zod schema and displaying dropdown options in the form
-export const kingdoms = z.enum(["Animalia", "Plantae", "Fungi", "Protista", "Archaea", "Bacteria"]);
-
-// Use Zod to define the shape + requirements of a Species entry; used in form validation
-export const speciesSchema = z.object({
-  scientific_name: z
-    .string()
-    .trim()
-    .min(1)
-    .transform((val) => val?.trim()),
-  common_name: z
-    .string()
-    .nullable()
-    // Transform empty string or only whitespace input to null before form submission, and trim whitespace otherwise
-    .transform((val) => (!val || val.trim() === "" ? null : val.trim())),
-  kingdom: kingdoms,
-  total_population: z.number().int().positive().min(1).nullable(),
-  image: z
-    .string()
-    .url()
-    .nullable()
-    // Transform empty string or only whitespace input to null before form submission, and trim whitespace otherwise
-    .transform((val) => (!val || val.trim() === "" ? null : val.trim())),
-  description: z
-    .string()
-    .nullable()
-    // Transform empty string or only whitespace input to null before form submission, and trim whitespace otherwise
-    .transform((val) => (!val || val.trim() === "" ? null : val.trim())),
-});
-
-export type FormData = z.infer<typeof speciesSchema>;
-
+import { kingdoms, speciesSchema, type FormData } from "./add-species-dialog";
 // Default values for the form fields.
 /* Because the react-hook-form (RHF) used here is a controlled form (not an uncontrolled form),
 fields that are nullable/not required should explicitly be set to `null` by default.
@@ -65,16 +29,20 @@ Otherwise, they will be `undefined` by default, which will raise warnings becaus
 All form fields should be set to non-undefined default values.
 Read more here: https://legacy.react-hook-form.com/api/useform/
 */
-const defaultValues: Partial<FormData> = {
-  scientific_name: "",
-  common_name: null,
-  kingdom: "Animalia",
-  total_population: null,
-  image: null,
-  description: null,
-};
 
-export default function AddSpeciesDialog({ userId }: { userId: string }) {
+import type { Database } from "@/lib/schema";
+type Species = Database["public"]["Tables"]["species"]["Row"];
+
+export default function EditSpeciesDialog({ species }: { species: Species }) {
+  const defaultValues: Partial<FormData> = {
+    scientific_name: species.scientific_name,
+    common_name: species.common_name,
+    kingdom: species.kingdom,
+    total_population: species.total_population,
+    image: species.image,
+    description: species.description,
+  };
+
   const router = useRouter();
 
   // Control open/closed state of the dialog
@@ -90,17 +58,17 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
   const onSubmit = async (input: FormData) => {
     // The `input` prop contains data that has already been processed by zod. We can now use it in a supabase query
     const supabase = createBrowserSupabaseClient();
-    const { error } = await supabase.from("species").insert([
-      {
-        author: userId,
+    const { error } = await supabase
+      .from("species")
+      .update({
         common_name: input.common_name,
         description: input.description,
         kingdom: input.kingdom,
         scientific_name: input.scientific_name,
         total_population: input.total_population,
         image: input.image,
-      },
-    ]);
+      })
+      .eq("id", species.id);
 
     // Catch and report errors from Supabase and exit the onSubmit function with an early 'return' if an error occurred.
     if (error) {
@@ -124,8 +92,8 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
     router.refresh();
 
     return toast({
-      title: "New species added!",
-      description: "Successfully added " + input.scientific_name + ".",
+      title: "Species successfully edited!",
+      description: "Successfully edited " + input.scientific_name + ".",
     });
   };
 
@@ -133,15 +101,15 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="secondary">
-          <Icons.add className="mr-3 h-5 w-5" />
-          Add Species
+          <Icons.edit className="mr-3 h-5 w-5" />
+          Edit Species
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-screen overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Add Species</DialogTitle>
+          <DialogTitle>Edit Species</DialogTitle>
           <DialogDescription>
-            Add a new species here. Click &quot;Add Species&quot; below when you&apos;re done.
+            Edit species here. Click &quot;Edit Species&quot; below when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -270,7 +238,7 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
               />
               <div className="flex">
                 <Button type="submit" className="ml-1 mr-1 flex-auto">
-                  Add Species
+                  Edit Species
                 </Button>
                 <DialogClose asChild>
                   <Button type="button" className="ml-1 mr-1 flex-auto" variant="secondary">
