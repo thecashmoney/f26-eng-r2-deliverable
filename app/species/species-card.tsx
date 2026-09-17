@@ -46,6 +46,8 @@ export default function SpeciesCard({ species, sessionId }: { species: Species; 
         Learn More
       </Button>
       {species.author === sessionId && <EditSpeciesDialog species={species} />}
+      {/* Add new edit species button only if the card is created by the author
+          (speices.author) === sessionId. Species is passed in here. */}
     </div>
   );
 }

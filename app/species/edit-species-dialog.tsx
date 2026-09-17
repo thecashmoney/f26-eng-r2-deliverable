@@ -21,7 +21,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState, type BaseSyntheticEvent } from "react";
 import { useForm } from "react-hook-form";
-import { kingdoms, speciesSchema, type FormData } from "./add-species-dialog";
+import { kingdoms, speciesSchema, type FormData } from "./add-species-dialog"; //import items that are necessary for updating the form, etc
 // Default values for the form fields.
 /* Because the react-hook-form (RHF) used here is a controlled form (not an uncontrolled form),
 fields that are nullable/not required should explicitly be set to `null` by default.
@@ -33,7 +33,16 @@ Read more here: https://legacy.react-hook-form.com/api/useform/
 import type { Database } from "@/lib/schema";
 type Species = Database["public"]["Tables"]["species"]["Row"];
 
+/*
+Flow: EditSpeciesDialog will be called from species-card, the species will be provided, and
+the species itself will be updated.
+
+We import kingdoms, speciesSchema, and formData to maintain the past form information,
+and maintain necessary constraints and formatting for all the data.
+*/
+
 export default function EditSpeciesDialog({ species }: { species: Species }) {
+  // Default Values is moved here: new data is loaded whenever EditSpeciesDialog is called.
   const defaultValues: Partial<FormData> = {
     scientific_name: species.scientific_name,
     common_name: species.common_name,
@@ -59,6 +68,8 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
     // The `input` prop contains data that has already been processed by zod. We can now use it in a supabase query
     const supabase = createBrowserSupabaseClient();
     const { error } = await supabase
+      //Here, we update the species dialog instead of replacing it. We offer fields that can be replaced
+      //we also use the update field to help update data instead of replacing it
       .from("species")
       .update({
         common_name: input.common_name,
@@ -69,6 +80,7 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
         image: input.image,
       })
       .eq("id", species.id);
+    //append species id
 
     // Catch and report errors from Supabase and exit the onSubmit function with an early 'return' if an error occurred.
     if (error) {

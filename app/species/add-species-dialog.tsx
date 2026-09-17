@@ -28,6 +28,7 @@ import { z } from "zod";
 
 // Define kingdom enum for use in Zod schema and displaying dropdown options in the form
 export const kingdoms = z.enum(["Animalia", "Plantae", "Fungi", "Protista", "Archaea", "Bacteria"]);
+//import the necessary kingdom constraints to edit-species-dialog
 
 // Use Zod to define the shape + requirements of a Species entry; used in form validation
 export const speciesSchema = z.object({
@@ -56,7 +57,7 @@ export const speciesSchema = z.object({
     .transform((val) => (!val || val.trim() === "" ? null : val.trim())),
 });
 
-export type FormData = z.infer<typeof speciesSchema>;
+export type FormData = z.infer<typeof speciesSchema>; //export necessary species form formatting
 
 // Default values for the form fields.
 /* Because the react-hook-form (RHF) used here is a controlled form (not an uncontrolled form),
