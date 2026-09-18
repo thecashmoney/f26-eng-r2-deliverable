@@ -10,13 +10,45 @@ on the client-side to correctly match component state and props should the order
 React server components don't track state between rerenders, so leaving the uniquely identified components (e.g. SpeciesCard)
 can cause errors with matching props and state in child components if the list order changes.
 */
+import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
+import { createBrowserSupabaseClient } from "@/lib/client-utils";
 import type { Database } from "@/lib/schema";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import EditSpeciesDialog from "./edit-species-dialog";
 type Species = Database["public"]["Tables"]["species"]["Row"];
 
 export default function SpeciesCard({ species, sessionId }: { species: Species; sessionId: string }) {
+  const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false); //deleting variables
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Are you sure you want to delete ${species.scientific_name}?`)) {
+      //confirm deletion
+      return;
+    }
+    setIsDeleting(true);
+    const supabase = createBrowserSupabaseClient();
+    const { error } = await supabase.from("species").delete().eq("id", species.id);
+    setIsDeleting(false);
+
+    if (error) {
+      return toast({
+        title: "Something went wrong.",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+
+    router.refresh();
+    return toast({
+      title: "Species deleted!",
+      description: `Successfully deleted ${species.scientific_name}.`,
+    });
+  };
   const displayInfo = () => {
     alert(
       "Scientific name: " +
@@ -45,9 +77,15 @@ export default function SpeciesCard({ species, sessionId }: { species: Species; 
       <Button className="mt-3 w-full" onClick={displayInfo}>
         Learn More
       </Button>
-      {species.author === sessionId && <EditSpeciesDialog species={species} />}
-      {/* Add new edit species button only if the card is created by the author
-          (speices.author) === sessionId. Species is passed in here. */}
+      {species.author === sessionId && (
+        <div className="mt-2 flex gap-2">
+          <EditSpeciesDialog species={species} />
+          <Button variant="destructive" onClick={() => void handleDelete()} disabled={isDeleting}>
+            <Icons.trash className="mr-2 h-4 w-4" />
+            Delete
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
