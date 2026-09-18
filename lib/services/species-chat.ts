@@ -1,9 +1,37 @@
 /* eslint-disable */
-// TODO: Import whatever service you decide to use. i.e. `import OpenAI from 'openai';`
+// Used Gemini
+import { GoogleGenAI } from "@google/genai";
 
-// HINT: You'll want to initialize your service outside of the function definition
+//initialize AI
+const ai = new GoogleGenAI({});
 
-// TODO: Implement the function below
 export async function generateResponse(message: string): Promise<string> {
-  return "hello";
+  try {
+    //create response with system instructions
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash-lite",
+      contents: message,
+      config: {
+        systemInstruction: [
+          "You are a helpful species and animal chatbot.",
+
+          "Only answer questions related to:",
+          "- Animals",
+          "- Animal species",
+          "- Wildlife",
+          "- Zoology",
+          "- Animal behavior",
+          "- Animal habitats",
+          "- Conservation",
+          "- Animal biology",
+
+          "If the user asks about something unrelated to animals or species, politely explain that you can only answer questions about animals and species.",
+          "Keep answers clear, accurate, and reasonably concise.",
+        ],
+      },
+    });
+    return String(response.text);
+  } catch (error) {
+    return "Sorry, I did not understand. Can you please try asking again or rephrasing the question?";
+  }
 }
