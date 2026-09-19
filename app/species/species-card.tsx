@@ -35,7 +35,7 @@ export default function SpeciesCard({ species, sessionId }: { species: Species; 
     }
     setIsDeleting(true);
     const supabase = createBrowserSupabaseClient();
-    const { error } = await supabase.from("species").delete().eq("id", species.id);
+    const { error } = await supabase.from("species").delete().eq("id", species.id); //strike out from supabase
     setIsDeleting(false);
 
     if (error) {
@@ -85,6 +85,7 @@ export default function SpeciesCard({ species, sessionId }: { species: Species; 
         <div className="mt-2 flex w-full gap-2">
           <EditSpeciesDialog species={species} />
           <Button className="flex-1" variant="destructive" onClick={() => void handleDelete()} disabled={isDeleting}>
+            {/* delete button */}
             <Icons.trash className="mr-2 h-4 w-4" />
             Delete
           </Button>
