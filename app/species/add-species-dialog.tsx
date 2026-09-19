@@ -66,6 +66,7 @@ Otherwise, they will be `undefined` by default, which will raise warnings becaus
 All form fields should be set to non-undefined default values.
 Read more here: https://legacy.react-hook-form.com/api/useform/
 */
+
 const defaultValues: Partial<FormData> = {
   scientific_name: "",
   common_name: null,
@@ -81,12 +82,31 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
   // Control open/closed state of the dialog
   const [open, setOpen] = useState<boolean>(false);
 
+  //wikipedia
+  const [searchQuery, setSearchQuery] = useState("");
+
   // Instantiate form functionality with React Hook Form, passing in the Zod schema (for validation) and default values
   const form = useForm<FormData>({
     resolver: zodResolver(speciesSchema),
     defaultValues,
     mode: "onChange",
   });
+
+  const onSearch = async () => {
+    const response = await fetch(
+      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchQuery)}`,
+    );
+    if (!response.ok) {
+      return toast({
+        title: "No article found.",
+        description: `Could not find search results for "${searchQuery}".`,
+        variant: "destructive",
+      });
+    }
+    const data = (await response.json()) as { extract: string; thumbnail?: { source: string } };
+    form.setValue("description", data.extract);
+    form.setValue("image", data.thumbnail?.source ?? null);
+  };
 
   const onSubmit = async (input: FormData) => {
     // The `input` prop contains data that has already been processed by zod. We can now use it in a supabase query
@@ -142,9 +162,20 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
         <DialogHeader>
           <DialogTitle>Add Species</DialogTitle>
           <DialogDescription>
-            Add a new species here. Click &quot;Add Species&quot; below when you&apos;re done.
+            Add a new species here. Click &quot;Add Species&quot; below when you&apos;re done. You can use &quot;Search
+            Wikipedia&quot; to attempt an autofill.
           </DialogDescription>
         </DialogHeader>
+        <div className="flex gap-2">
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search Wikipedia..."
+          />
+          <Button type="button" onClick={() => void onSearch()}>
+            Search
+          </Button>
+        </div>
         <Form {...form}>
           <form onSubmit={(e: BaseSyntheticEvent) => void form.handleSubmit(onSubmit)(e)}>
             <div className="grid w-full items-center gap-4">
