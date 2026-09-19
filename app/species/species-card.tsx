@@ -20,7 +20,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import EditSpeciesDialog from "./edit-species-dialog";
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-type Species = Database["public"]["Tables"]["species"]["Row"] & {
+export type Species = Database["public"]["Tables"]["species"]["Row"] & {
   profiles: Profile | null;
 };
 

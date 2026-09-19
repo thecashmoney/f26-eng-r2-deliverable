@@ -3,7 +3,7 @@ import { TypographyH2 } from "@/components/ui/typography";
 import { createServerSupabaseClient } from "@/lib/server-utils";
 import { redirect } from "next/navigation";
 import AddSpeciesDialog from "./add-species-dialog";
-import SpeciesCard from "./species-card";
+import SpeciesCard, { type Species } from "./species-card";
 
 export default async function SpeciesList() {
   // Create supabase server component client and obtain user session from stored cookie
@@ -20,7 +20,10 @@ export default async function SpeciesList() {
   // Obtain the ID of the currently signed-in user
   const sessionId = session.user.id;
 
-  const { data: species } = await supabase.from("species").select("*, profiles(*)").order("id", { ascending: false });
+  const { data: species }: { data: Species[] | null } = await supabase
+    .from("species")
+    .select("*, profiles(*)")
+    .order("id", { ascending: false });
 
   return (
     <>
