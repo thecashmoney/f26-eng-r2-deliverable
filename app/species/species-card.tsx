@@ -82,9 +82,9 @@ export default function SpeciesCard({ species, sessionId }: { species: Species; 
         Learn More
       </Button>
       {species.author === sessionId && (
-        <div className="mt-2 flex gap-2">
+        <div className="mt-2 flex w-full gap-2">
           <EditSpeciesDialog species={species} />
-          <Button variant="destructive" onClick={() => void handleDelete()} disabled={isDeleting}>
+          <Button className="flex-1" variant="destructive" onClick={() => void handleDelete()} disabled={isDeleting}>
             <Icons.trash className="mr-2 h-4 w-4" />
             Delete
           </Button>
