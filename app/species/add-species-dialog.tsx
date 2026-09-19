@@ -59,6 +59,9 @@ export const speciesSchema = z.object({
 
 export type FormData = z.infer<typeof speciesSchema>; //export necessary species form formatting
 
+//the wikipedia fields a search can autofill
+export const importableParts = ["description", "image"] as const;
+
 // Default values for the form fields.
 /* Because the react-hook-form (RHF) used here is a controlled form (not an uncontrolled form),
 fields that are nullable/not required should explicitly be set to `null` by default.
@@ -85,6 +88,12 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
   //wikipedia states: searchQuery used to record what we are looking for
   const [searchQuery, setSearchQuery] = useState("");
 
+  //which parts of the article the search should overwrite
+  const [selectedParts, setSelectedParts] = useState<Record<(typeof importableParts)[number], boolean>>({
+    description: true,
+    image: true,
+  });
+
   // Instantiate form functionality with React Hook Form, passing in the Zod schema (for validation) and default values
   const form = useForm<FormData>({
     resolver: zodResolver(speciesSchema),
@@ -108,9 +117,9 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
     }
     // receive data
     const data = (await response.json()) as { extract: string; thumbnail?: { source: string } };
-    //autofill the form
-    form.setValue("description", data.extract);
-    form.setValue("image", data.thumbnail?.source ?? null);
+    //autofill only the parts that are checked
+    if (selectedParts.description) form.setValue("description", data.extract);
+    if (selectedParts.image) form.setValue("image", data.thumbnail?.source ?? null);
   };
 
   const onSubmit = async (input: FormData) => {
@@ -183,6 +192,19 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
             {/* run onSearch() when button is clicked */}
             Search
           </Button>
+        </div>
+        <div className="flex gap-4 text-sm">
+          {/* pick which fields a search is allowed to overwrite */}
+          {importableParts.map((part) => (
+            <label key={part} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={selectedParts[part]}
+                onChange={(e) => setSelectedParts({ ...selectedParts, [part]: e.target.checked })}
+              />
+              {part}
+            </label>
+          ))}
         </div>
         <Form {...form}>
           <form onSubmit={(e: BaseSyntheticEvent) => void form.handleSubmit(onSubmit)(e)}>

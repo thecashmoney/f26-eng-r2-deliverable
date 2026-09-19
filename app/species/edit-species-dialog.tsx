@@ -21,7 +21,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState, type BaseSyntheticEvent } from "react";
 import { useForm } from "react-hook-form";
-import { kingdoms, speciesSchema, type FormData } from "./add-species-dialog"; //import items that are necessary for updating the form, etc
+import { importableParts, kingdoms, speciesSchema, type FormData } from "./add-species-dialog"; //import items that are necessary for updating the form, etc
+//importable parts: allow user to select which parts to import
+
 // Default values for the form fields.
 /* Because the react-hook-form (RHF) used here is a controlled form (not an uncontrolled form),
 fields that are nullable/not required should explicitly be set to `null` by default.
@@ -57,12 +59,42 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
   // Control open/closed state of the dialog
   const [open, setOpen] = useState<boolean>(false);
 
+  //wikipedia states: searchQuery used to record what we are looking for
+  const [searchQuery, setSearchQuery] = useState("");
+
+  //which parts of the article the search should overwrite
+  const [selectedParts, setSelectedParts] = useState<Record<(typeof importableParts)[number], boolean>>({
+    description: true,
+    image: true,
+  });
+
   // Instantiate form functionality with React Hook Form, passing in the Zod schema (for validation) and default values
   const form = useForm<FormData>({
     resolver: zodResolver(speciesSchema),
     defaultValues,
     mode: "onChange",
   });
+
+  //search function for wikipedia
+  const onSearch = async () => {
+    //search wikipedia for search query
+    const response = await fetch(
+      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchQuery)}`,
+    );
+    if (!response.ok) {
+      //error if not found
+      return toast({
+        title: "No article found.",
+        description: `Could not find search results for "${searchQuery}".`,
+        variant: "destructive",
+      });
+    }
+    // receive data
+    const data = (await response.json()) as { extract: string; thumbnail?: { source: string } };
+    //autofill only the parts that are checked
+    if (selectedParts.description) form.setValue("description", data.extract);
+    if (selectedParts.image) form.setValue("image", data.thumbnail?.source ?? null);
+  };
 
   const onSubmit = async (input: FormData) => {
     // The `input` prop contains data that has already been processed by zod. We can now use it in a supabase query
@@ -121,9 +153,36 @@ export default function EditSpeciesDialog({ species }: { species: Species }) {
         <DialogHeader>
           <DialogTitle>Edit Species</DialogTitle>
           <DialogDescription>
-            Edit species here. Click &quot;Edit Species&quot; below when you&apos;re done.
+            Edit species here. Click &quot;Edit Species&quot; below when you&apos;re done. You can use &quot;Search
+            Wikipedia&quot; to attempt an autofill.
           </DialogDescription>
         </DialogHeader>
+        <div className="flex gap-2">
+          {/* wikipedia function */}
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            // set search query with inputted value
+            placeholder="Search Wikipedia..."
+          />
+          <Button type="button" onClick={() => void onSearch()}>
+            {/* run onSearch() when button is clicked */}
+            Search
+          </Button>
+        </div>
+        <div className="flex gap-4 text-sm">
+          {/* pick which fields a search is allowed to overwrite */}
+          {importableParts.map((part) => (
+            <label key={part} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={selectedParts[part]}
+                onChange={(e) => setSelectedParts({ ...selectedParts, [part]: e.target.checked })}
+              />
+              {part}
+            </label>
+          ))}
+        </div>
         <Form {...form}>
           <form onSubmit={(e: BaseSyntheticEvent) => void form.handleSubmit(onSubmit)(e)}>
             <div className="grid w-full items-center gap-4">
