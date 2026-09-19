@@ -82,7 +82,7 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
   // Control open/closed state of the dialog
   const [open, setOpen] = useState<boolean>(false);
 
-  //wikipedia
+  //wikipedia states: searchQuery used to record what we are looking for
   const [searchQuery, setSearchQuery] = useState("");
 
   // Instantiate form functionality with React Hook Form, passing in the Zod schema (for validation) and default values
@@ -92,18 +92,23 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
     mode: "onChange",
   });
 
+  //search function for wikipedia
   const onSearch = async () => {
+    //search wikipedia for search query
     const response = await fetch(
       `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchQuery)}`,
     );
     if (!response.ok) {
+      //error if not found
       return toast({
         title: "No article found.",
         description: `Could not find search results for "${searchQuery}".`,
         variant: "destructive",
       });
     }
+    // receive data
     const data = (await response.json()) as { extract: string; thumbnail?: { source: string } };
+    //autofill the form
     form.setValue("description", data.extract);
     form.setValue("image", data.thumbnail?.source ?? null);
   };
@@ -167,12 +172,15 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
           </DialogDescription>
         </DialogHeader>
         <div className="flex gap-2">
+          {/* wikipedia function */}
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            // set search query with inputted value
             placeholder="Search Wikipedia..."
           />
           <Button type="button" onClick={() => void onSearch()}>
+            {/* run onSearch() when button is clicked */}
             Search
           </Button>
         </div>
