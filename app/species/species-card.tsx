@@ -19,7 +19,10 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import EditSpeciesDialog from "./edit-species-dialog";
-type Species = Database["public"]["Tables"]["species"]["Row"];
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type Species = Database["public"]["Tables"]["species"]["Row"] & {
+  profiles: Profile | null;
+};
 
 export default function SpeciesCard({ species, sessionId }: { species: Species; sessionId: string }) {
   const router = useRouter();
@@ -61,7 +64,8 @@ export default function SpeciesCard({ species, sessionId }: { species: Species; 
         species.kingdom +
         "\nDescription: " +
         species.description +
-        ".",
+        "\nContributed by: " +
+        (species.profiles?.display_name ?? "Unknown"),
     );
   };
   return (
